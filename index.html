@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quaff Reseller Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f6f8; margin: 40px; color: #333; }
+      .form-container { max-width: 500px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin: auto; }
+        h2 { color: #333333; margin-top: 0; border-bottom: 2px solid #00cff4; padding-bottom: 10px; }
+        label { font-weight: 600; display: block; margin: 15px 0 5px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        button { background-color: #00cff4; color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 20px; transition: background 0.3s; }
+        button:hover { background-color: #00b2d4; }
+      .error { color: #ff3d57; font-size: 13px; margin-top: 5px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Quaff Reseller Order Form</h2>
+    <form id="orderForm">
+        <label for="resellerName">Reseller Name</label>
+        <input type="text" id="resellerName" placeholder="e.g., Acme Corp" required>
+
+        <label for="bottleModel">Bottle Model</label>
+        <select id="bottleModel" required>
+            <option value="Aruba">Aruba</option>
+            <option value="Zeltser">Zeltser</option>
+            <option value="Marumba">Marumba</option>
+            <option value="Avatar">Avatar</option>
+        </select>
+
+        <label for="bottleSize">Bottle Size</label>
+        <select id="bottleSize" required>
+            <option value="0.75L">0.75L</option>
+            <option value="1L">1L</option>
+        </select>
+
+        <label for="quantity">Quantity (Number of Bottles)</label>
+        <input type="number" id="quantity" placeholder="e.g., 500" required>
+        <div id="qtyError" class="error">Zeltser bottles require a minimum of 500 units.</div>
+
+        <label for="priority">Priority</label>
+        <select id="priority" required>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+        </select>
+
+        <label for="phone">Contact Phone</label>
+        <input type="tel" id="phone" placeholder="e.g., 052-1234567" required>
+
+        <button type="submit" id="submitBtn">Submit Order</button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById('orderForm');
+    const bottleModel = document.getElementById('bottleModel');
+    const quantity = document.getElementById('quantity');
+    const qtyError = document.getElementById('qtyError');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        qtyError.style.display = 'none';
+
+        // Business Rule: Zeltser minimum order validation
+        if (bottleModel.value === 'Zeltser' && parseInt(quantity.value) < 500) {
+            qtyError.style.display = 'block';
+            return;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerText = 'Submitting...';
+        submitBtn.disabled = true;
+
+        const payload = {
+            resellerName: document.getElementById('resellerName').value,
+            bottleModel: bottleModel.value,
+            bottleSize: document.getElementById('bottleSize').value, // FIX: Correctly maps to size select input
+            quantity: parseInt(quantity.value),
+            priority: document.getElementById('priority').value,
+            phone: document.getElementById('phone').value
+        };
+
+        try {
+            // This calls Netlify's backend serverless route automatically
+            const response = await fetch('/.netlify/functions/submit-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert('Success! Your order has been registered in Quaff\'s monday.com board.');
+                form.reset();
+            } else {
+                alert('Submission failed. Check your browser console for details.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('An error occurred.');
+        } finally {
+            submitBtn.innerText = 'Submit Order';
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>
