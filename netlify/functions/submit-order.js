@@ -59,7 +59,7 @@ exports.handler = async (event, context) => {
             throw new Error("Could not fetch Bottle Directory. Please verify your Bottle Directory Board ID or API token.");
         }
 
-        const bottleItems = directoryData.data.boards.items_page.items;
+        const bottleItems = directoryData.data.boards[0].items_page.items;
 
         // Step B: Match the frontend selection with the directory item name
         // e.g., maps frontend selection "Aruba" + "0.75L" to Bottle Directory name "Aruba - 0.75L"
@@ -73,12 +73,13 @@ exports.handler = async (event, context) => {
         const matchedBottleId = matchedBottle.id; // The internal item ID needed for Connect Boards [2, 3]
 
         // Step C: Construct column values dynamically
-        const colValsObj = {};
-        colValsObj = { "item_ids": }; // Relates Connect Boards 
-        colValsObj = quantity;
-        colValsObj = { "label": priority };
-        colValsObj = phone; // Text column takes raw string 
-        colValsObj = { "label": "New Request" }; // Automatically sets label to blue "New Request"
+        const colValsObj = {
+            [CONNECT_BOTTLE_COLUMN_ID]: { "item_ids": [Number(matchedBottleId)] }, // Relates Connect Boards
+            [QUANTITY_COLUMN_ID]: quantity,
+            [PRIORITY_COLUMN_ID]: { "label": priority },
+            [PHONE_COLUMN_ID]: phone, // Text column takes raw string
+            [STATUS_COLUMN_ID]: { "label": "New Request" } // Sets label to "New Request"
+        };
 
         const columnValues = JSON.stringify(colValsObj);
 
@@ -111,6 +112,16 @@ exports.handler = async (event, context) => {
         });
 
         const data = await response.json();
+
+        // monday returns HTTP 200 even when the GraphQL mutation fails,
+        // so check for an errors array and surface it as a real failure.
+        if (data.errors || !data.data || !data.data.create_item) {
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ error: "monday.com rejected the order", details: data.errors || data })
+            };
+        }
 
         return {
             statusCode: 200,
