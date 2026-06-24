@@ -12,18 +12,19 @@ exports.handler = async (event, context) => {
 
     try {
         const body = JSON.parse(event.body);
-        const { resellerName, bottleModel, bottleSize, quantity, priority, phone } = body;
+        const { resellerName, bottleModel, bottleSize, quantity, priority, phone, email } = body;
 
         // ================= CONFIGURATION =================
         const ORDER_BOARD_ID = 5098823299; // Your Order Management Board ID
         const BOTTLE_DIRECTORY_BOARD_ID = 5098910552; // Your Bottle Directory Board ID
         const MONDAY_API_TOKEN = process.env.MONDAY_API_TOKEN; // Loaded securely from Netlify Env
-        
+
         // Exact Column IDs retrieved from Developer Mode
         const CONNECT_BOTTLE_COLUMN_ID = "board_relation_mm4gqv1j"; // Connect Board Column
         const QUANTITY_COLUMN_ID = "numeric_mm4f5emj";             // # Units Column
         const PRIORITY_COLUMN_ID = "priority";                     // Priority Column
         const PHONE_COLUMN_ID = "text_mm4kgz08";                   // Phone (Text) Column
+        const EMAIL_COLUMN_ID = "text_mm4gc2z0";                   // Email (Text) Column
         const STATUS_COLUMN_ID = "project_status";                 // Order Status Column
         // =================================================
 
@@ -54,8 +55,8 @@ exports.handler = async (event, context) => {
         });
 
         const directoryData = await directoryResponse.json();
-        
-        if (!directoryData.data ||!directoryData.data.boards || directoryData.data.boards.length === 0) {
+
+        if (!directoryData.data || !directoryData.data.boards || directoryData.data.boards.length === 0) {
             throw new Error("Could not fetch Bottle Directory. Please verify your Bottle Directory Board ID or API token.");
         }
 
@@ -63,14 +64,14 @@ exports.handler = async (event, context) => {
 
         // Step B: Match the frontend selection with the directory item name
         // e.g., maps frontend selection "Aruba" + "0.75L" to Bottle Directory name "Aruba - 0.75L"
-        const targetBottleName = `${bottleModel} - ${bottleSize}`; 
+        const targetBottleName = `${bottleModel} - ${bottleSize}`;
         const matchedBottle = bottleItems.find(item => item.name.trim().toLowerCase() === targetBottleName.trim().toLowerCase());
 
         if (!matchedBottle) {
             throw new Error(`Could not find a bottle named "${targetBottleName}" in your Bottle Directory.`);
         }
 
-        const matchedBottleId = matchedBottle.id; // The internal item ID needed for Connect Boards [2, 3]
+        const matchedBottleId = matchedBottle.id; // The internal item ID needed for Connect Boards
 
         // Step C: Construct column values dynamically
         const colValsObj = {
@@ -78,6 +79,7 @@ exports.handler = async (event, context) => {
             [QUANTITY_COLUMN_ID]: quantity,
             [PRIORITY_COLUMN_ID]: { "label": priority },
             [PHONE_COLUMN_ID]: phone, // Text column takes raw string
+            [EMAIL_COLUMN_ID]: email, // Text column takes raw string
             [STATUS_COLUMN_ID]: { "label": "New Request" } // Sets label to "New Request"
         };
 
@@ -87,8 +89,8 @@ exports.handler = async (event, context) => {
         const mutation = `
             mutation ($itemName: String!, $columnVals: JSON!) {
                 create_item (
-                    board_id: ${ORDER_BOARD_ID}, 
-                    item_name: $itemName, 
+                    board_id: ${ORDER_BOARD_ID},
+                    item_name: $itemName,
                     column_values: $columnVals
                 ) {
                     id
