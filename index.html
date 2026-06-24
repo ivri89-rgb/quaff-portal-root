@@ -50,6 +50,9 @@
         <label for="phone">Contact Phone</label>
         <input type="tel" id="phone" placeholder="e.g., 052-1234567" required>
 
+        <label for="email">Contact Email</label>
+        <input type="email" id="email" placeholder="e.g., orders@acmecorp.com" required>
+
         <button type="submit" id="submitBtn">Submit Order</button>
     </form>
 </div>
@@ -77,10 +80,11 @@
         const payload = {
             resellerName: document.getElementById('resellerName').value,
             bottleModel: bottleModel.value,
-            bottleSize: document.getElementById('bottleSize').value, // FIX: Correctly maps to size select input
+            bottleSize: document.getElementById('bottleSize').value,
             quantity: parseInt(quantity.value),
             priority: document.getElementById('priority').value,
-            phone: document.getElementById('phone').value
+            phone: document.getElementById('phone').value,
+            email: document.getElementById('email').value
         };
 
         try {
